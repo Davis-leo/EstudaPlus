@@ -1,0 +1,41 @@
+############################
+# GERAL
+############################
+.env
+.env.*
+.vscode/
+.DS_Store
+Thumbs.db
+
+############################
+# PYTHON / DJANGO
+############################
+venv/
+__pycache__/
+*.pyc
+*.pyo
+db.sqlite3
+*.log
+media/
+staticfiles/
+
+############################
+# NODE / NEXT / REACT
+############################
+node_modules/
+.next/
+dist/
+build/
+out/
+coverage/
+
+############################
+# TYPESCRIPT
+############################
+*.tsbuildinfo
+
+############################
+# TESTES
+############################
+.pytest_cache/
+.coverage
