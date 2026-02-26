@@ -136,36 +136,118 @@ Cadastro de conteúdos
 
 Monitoramento de desempenho dos alunos
 
-📦 Instalação do Backend
 
-1️⃣ Clone o repositório
+
+📦 Configuração do projeto:
+
+✅ 1️⃣ Instalar as ferramentas
+
+Instalar:
+
+Python (mesma versão que usava)
+
+MySQL
+
+Git
+
+(Opcional) HeidiSQL
+
+Testar no terminal:
+
+python --version
+git --version
+mysql --version
+
+Se respondeu → ok.
+
+✅ 2️⃣ Clonar o projeto do GitHub
+
+Escolha a pasta onde quer o projeto:
 
 git clone https://github.com/Davis-leo/EstudaPlus.git
 cd EstudaPlus
-
-2️⃣ Crie o ambiente virtual
-
+✅ 3️⃣ Criar o ambiente virtual
 python -m venv venv
 venv\Scripts\activate
 
-3️⃣ Instale as dependências
+Se aparecer (venv) no terminal → perfeito.
 
+✅ 4️⃣ Instalar dependências
 pip install -r requirements.txt
 
-4️⃣ Configure o arquivo .env
+Pronto. Backend instalado.
 
-Exemplo:
+✅ 5️⃣ Criar o arquivo .env
 
-SECRET_KEY=sua_chave_secreta
-DEBUG=True
+Criar arquivo .env na raiz do projeto.
 
-5️⃣ Rode as migrações
+Colar seu backup salvo no Drive:
 
+DJANGO_SECRET_KEY="sua_secret_key"
+
+DB_NAME="estudaplus"
+DB_USER="root"
+DB_PASSWORD="sua_senha"
+DB_HOST="127.0.0.1"
+DB_PORT="3306"
+
+⚠️ Garantir que .env está no .gitignore.
+
+✅ 6️⃣ Criar o banco no MySQL
+
+Entrar no MySQL e rodar:
+
+CREATE DATABASE estudaplus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+✅ 7️⃣ Rodar migrations
 python manage.py migrate
 
-6️⃣ Inicie o servidor
+Isso recria todas as tabelas.
 
+✅ 8️⃣ Criar superusuário
+python manage.py createsuperuser
+
+Criar usuário admin.
+
+✅ 9️⃣ Popular banco (cursos)
+
+Opção 1:
+Rodar seu script SQL.
+
+Opção 2 (melhor futuramente):
+Rodar script seed automatizado.
+
+✅ 🔟 Rodar servidor
 python manage.py runserver
+
+Testar:
+
+http://127.0.0.1:8000/admin/
+
+✅ 1️⃣1️⃣ Reconfigurar Postman
+
+Criar Environment
+
+Definir BASE_URL
+
+Fazer login novamente
+
+Gerar novo token
+
+Atualizar Authorization
+
+✅ 1️⃣ Verificar se o remote está configurado
+
+Dentro da pasta do projeto, rode:
+
+git remote -v
+
+Você deve ver algo assim:
+
+origin  https://github.com/Davis-leo/EstudaPlus.git (fetch)
+origin  https://github.com/Davis-leo/EstudaPlus.git (push)
+
+Se aparecer isso → está tudo certo ✅
+
 
 📈 Escalabilidade e Cloud
 
