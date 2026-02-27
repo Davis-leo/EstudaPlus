@@ -1,12 +1,16 @@
-from rest_framework import viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework import viewsets, decorators, status
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.request import Request
+from rest_framework.exceptions import APIException
 
+from core.utils.exceptions import ValidationError
+from core.utils.formatters import format_serializer_error
 from courses.filters import CourseFilter
-from courses.models import Course, Enrollment
-from courses.serializers import CourseSerializer
+from courses.models import Course, Enrollment, Lesson, Module, WatchedLesson
+from courses.serializers import CourseSerializer, ModuleSerializer, ReviewSerializer
 
+from django.db.models import Avg, Count, Sum
 
 
 class CourseViewSet(viewsets.ReadOnlyModelViewSet):
@@ -15,6 +19,47 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     filterset_class = CourseFilter
     ordering_fields = ['price', 'created_at']  # /courses/?order="price"
+
+    @decorators.action(detail=True, methods=['get'])
+    def reviews(self, request: Request, pk=None):
+        course = self.get_object()
+        reviews = course.reviews.all()
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
+
+    @decorators.action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def submit_review(self, request: Request, pk=None):
+        course = self.get_object()
+        user = request.user
+
+        if not Enrollment.objects.filter(user=user, course=course).exists():
+            raise APIException(
+                "Você precisa estar matriculado neste curso para avaliá-lo.")
+
+        if course.reviews.filter(user=user).exists():
+            raise APIException("Você já avaliou este curso.")
+
+        data = {
+            "rating": request.data.get('rating'),
+            "comment": request.data.get('comment')
+        }
+
+        serializer = ReviewSerializer(data=data)
+        if not serializer.is_valid():
+            raise ValidationError(format_serializer_error(serializer.errors))
+
+        serializer.save(user=user, course=course)
+
+        aggregate = course.reviews.aggregate(
+            average_rating=Avg('rating'),
+            total_reviews=Count('id')
+        )
+
+        course.average_rating = aggregate['average_rating'] or 0
+        course.total_reviews = aggregate['total_reviews'] or 0
+        course.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request: Request, *args, **kwargs):
         instance = self.get_object()
@@ -33,4 +78,48 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({
             **serializer.data,
             'enrolled_at': enrolled_at
+        })
+
+    @decorators.action(detail=True, methods=['get'])
+    def content(self, request: Request, pk=None):
+        course = self.get_object()
+
+        modules = Module.objects.filter(course=course)
+        total_modules = modules.count()
+
+        lessons = Lesson.objects.filter(module__course=course)
+        total_lessons = lessons.count()
+
+        total_time = lessons.aggregate(
+            total=Sum('time_estimate')
+        )['total'] or 0
+
+        watched_lessons_count = 0
+        watched_lessons_set = set()
+
+        if request.user.is_authenticated:
+            watched_lessons = WatchedLesson.objects.filter(
+                user=request.user,
+                lesson__in=lessons
+            ).values_list('lesson_id', flat=True)
+
+            watched_lessons_set = set(watched_lessons)
+            watched_lessons_count = len(watched_lessons_set)
+
+        progress = 0
+        if total_lessons > 0:
+            progress = round((watched_lessons_count / total_lessons) * 100, 2)
+
+        modules_data = ModuleSerializer(modules, many=True).data
+
+        for module in modules_data:
+            for lesson in module['lessons']:
+                lesson['is_watched'] = lesson['id'] in watched_lessons_set
+
+        return Response({
+            "total_modules": total_modules,
+            "total_time": total_time,
+            "total_lessons": total_lessons,
+            "progress": progress,
+            "modules": modules_data
         })

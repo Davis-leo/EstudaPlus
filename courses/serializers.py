@@ -40,7 +40,7 @@ class CourseSerializer(serializers.ModelSerializer):
         return obj.enrollments.count()
 
 
-class ReviewSerializer(serializers.SerializerMethodField):
+class ReviewSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(slug_field='name', read_only=True)
 
     class Meta:
