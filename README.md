@@ -1,275 +1,199 @@
-📚 EstudaPlus
+# EstudaPlus
 
-Plataforma de Apoio ao Estudo para Alunos da Rede Pública
+Plataforma de apoio ao estudo para alunos da rede pública, focada em inclusão digital e reforço escolar.
 
-O EstudaPlus é uma plataforma educacional desenvolvida com foco em apoio ao aprendizado de alunos da rede pública, promovendo inclusão digital, reforço escolar e redução da evasão.
+---
 
-Este projeto integra conhecimentos de múltiplas disciplinas da área de tecnologia e propõe uma solução escalável, moderna e com impacto social real.
+## Stack Tecnológica
 
+**Frontend**  
+Next.js | React | TypeScript | Tailwind CSS | Shadcn UI | Zustand | React Hook Form | Zod
 
-🎯 Objetivo do Projeto
+**Backend**  
+Django | Django REST Framework | Django Simple JWT | Django Filters | Python Decouple
 
-Desenvolver uma plataforma web que ofereça:
-
-
-📖 Conteúdos didáticos simplificados
-
-
-👨‍🏫 Painel administrativo para professores voluntários
-
-A proposta é criar um ambiente acessível, responsivo e intuitivo que auxilie alunos no reforço escolar e preparação para avaliações.
-
-
-🌍 Impacto Social
-
-O EstudaPlus contribui para:
-
-Redução da evasão escolar
-
-Inclusão digital
-
-Apoio a estudantes em situação de vulnerabilidade
-
-Democratização do acesso a materiais educacionais
-
-A plataforma foi idealizada como ferramenta de apoio complementar ao ensino tradicional.
-
-
-🧠 Disciplinas Integradas
-
-
-Este projeto integra conhecimentos das seguintes áreas:
-
-
-💻 Desenvolvimento Web
-
-🗄 Banco de Dados
-
-🏗 Engenharia de Software
-
-🎨 UX/UI
-
-☁️ Computação em Nuvem (Cloud)
-
-🛠 Stack Tecnológica
-
-
-🔥 Frontend
-
-Next.js
-
-React
-
-TypeScript
-
-Tailwind CSS
-
-Shadcn UI
-
-Zustand
-
-React Hook Form
-
-Zod
-
-
-🛠 Backend
-
-Django
-
-Django REST Framework
-
-Django Simple JWT (Autenticação)
-
-Django Filters
-
-Python Decouple
-
-
-💳 Integrações Futuras
-
-Sistema de permissões por perfil (Aluno / Professor)
-
-Escalabilidade via Cloud
-
-
-🏗 Arquitetura do Sistema
-
-O sistema segue arquitetura desacoplada:
-
-Frontend (Next.js) → Consome API REST
-Backend (Django + DRF) → Responsável por:
-
-Autenticação
-
-Gerenciamento de usuários
-
-Gerenciamento de conteúdos
-
-Persistência de dados
-
-Controle de permissões
-
-Essa separação garante:
-
-Escalabilidade
-
-Manutenção facilitada
-
-Evolução modular
-
-
-🔐 Funcionalidades Principais
-
-👨‍🎓 Área do Aluno
-
-Cadastro e login com JWT
-
-Acesso a conteúdos por disciplina
-
-Acompanhamento de desempenho
-
-
-👨‍🏫 Área do Professor Voluntário
-
-Cadastro de conteúdos
-
-Monitoramento de desempenho dos alunos
-
-
-
-📦 Configuração do projeto:
-
-✅ 1️⃣ Instalar as ferramentas
-
-Instalar:
-
-Python (mesma versão que usava)
-
+**Banco de Dados**  
 MySQL
 
-Git
+---
 
-(Opcional) HeidiSQL
+## Arquitetura
 
-Testar no terminal:
+Frontend desacoplado (Next.js) consome API REST do backend (Django + DRF), garantindo:
 
-python --version
-git --version
-mysql --version
+- Separação de responsabilidades  
+- Escalabilidade  
+- Manutenção modular  
 
-Se respondeu → ok.
+---
 
-✅ 2️⃣ Clonar o projeto do GitHub
+## Funcionalidades
 
-Escolha a pasta onde quer o projeto:
+### Aluno
+- Cadastro e login com JWT  
+- Acesso a conteúdos por disciplina  
+- Acompanhamento de desempenho  
 
+### Professor Voluntário
+- Gestão de conteúdos  
+- Monitoramento de desempenho dos alunos  
+
+---
+
+# Configuração do Projeto
+
+## 1. Instalar ferramentas
+
+- Node.js  
+- Python  
+- MySQL  
+- Git  
+
+---
+
+## 2. Clonar repositório
+
+```bash
 git clone https://github.com/Davis-leo/EstudaPlus.git
 cd EstudaPlus
-✅ 3️⃣ Criar o ambiente virtual
+```
+
+---
+
+## 3. Criar ambiente virtual
+
+```bash
 python -m venv venv
 venv\Scripts\activate
+```
 
-Se aparecer (venv) no terminal → perfeito.
+---
 
-✅ 4️⃣ Instalar dependências
+## 4. Instalar dependências
+
+```bash
 pip install -r requirements.txt
+```
 
-Pronto. Backend instalado.
+---
 
-✅ 5️⃣ Criar o arquivo .env
+## 5. Configurar .env
 
-Criar arquivo .env na raiz do projeto.
+Criar arquivo `.env` na raiz do projeto:
 
-Colar seu backup salvo no Drive:
-
+```env
 DJANGO_SECRET_KEY="sua_secret_key"
-
 DB_NAME="estudaplus"
 DB_USER="root"
 DB_PASSWORD="sua_senha"
 DB_HOST="127.0.0.1"
 DB_PORT="3306"
+```
 
-⚠️ Garantir que .env está no .gitignore.
+Verificar se `.env` está no `.gitignore`.
 
-✅ 6️⃣ Criar o banco no MySQL
+---
 
-Entrar no MySQL e rodar:
+## 6. Criar banco MySQL
 
-CREATE DATABASE estudaplus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-✅ 7️⃣ Rodar migrations
+```sql
+CREATE DATABASE estudaplus
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+```
+
+---
+
+## 7. Rodar migrations
+
+```bash
 python manage.py migrate
+```
 
-Isso recria todas as tabelas.
+---
 
-✅ 8️⃣ Criar superusuário
+## 8. Criar superusuário
+
+```bash
 python manage.py createsuperuser
+```
 
-Criar usuário admin.
+Acessar:
 
-✅ 9️⃣ Popular banco (cursos)
-
-Opção 1:
-Rodar seu script SQL.
-
-Opção 2 (melhor futuramente):
-Rodar script seed automatizado.
-
-✅ 🔟 Rodar servidor
-python manage.py runserver
-
-Testar:
-
+```
 http://127.0.0.1:8000/admin/
+```
 
-✅ 1️⃣1️⃣ Reconfigurar Postman
+---
 
-Criar Environment
+## 9. Popular banco (cursos)
 
-Definir BASE_URL
+### Opção 1 — Restaurar via arquivo `.sql`
 
-Fazer login novamente
+Entrar no MySQL:
 
-Gerar novo token
+```bash
+mysql -u root -p
+```
 
-Atualizar Authorization
+Selecionar o banco:
 
-✅ 1️⃣ Verificar se o remote está configurado
+```sql
+USE estudaplus;
+```
 
-Dentro da pasta do projeto, rode:
+Executar o backup:
 
-git remote -v
+```sql
+SOURCE caminho/cursos_backup.sql;
+```
 
-Você deve ver algo assim:
+Verificar:
 
-origin  https://github.com/Davis-leo/EstudaPlus.git (fetch)
-origin  https://github.com/Davis-leo/EstudaPlus.git (push)
+```sql
+SHOW TABLES;
+SELECT * FROM courses_course;
+```
 
-Se aparecer isso → está tudo certo ✅
+---
 
+### Opção 2 — Seed automatizado (recomendado)
 
-📈 Escalabilidade e Cloud
+```bash
+python manage.py seed_courses
+```
 
-O projeto foi estruturado para futura implantação em ambiente cloud, permitindo:
+---
 
-Deploy em serviços como AWS, Azure ou Render
+## 10. Rodar servidor
 
-Banco de dados gerenciado
+```bash
+python manage.py runserver
+```
 
-Separação de ambientes (dev / staging / prod)
+Acessar:
 
-Escalabilidade horizontal
+```
+http://127.0.0.1:8000/
+```
 
+---
 
-🎓 Finalidade Acadêmica
+## Configuração do Postman (JWT)
 
-Este projeto atende ao escopo do:
+1. Criar um Environment  
+2. Definir variável:
 
-Projeto 4 – Plataforma de Apoio ao Estudo para Alunos da Rede Pública
+```
+BASE_URL = http://127.0.0.1:8000/api/v1
+```
 
-Demonstrando aplicação prática de conceitos técnicos, integração multidisciplinar e preocupação com impacto social.
+3. Fazer login  
+4. Copiar `access_token`  
+5. Usar como Bearer Token nas rotas protegidas  
 
-🚧 Status do Projeto
+---
 
-Em desenvolvimento — novas funcionalidades estão sendo implementadas.
+## Status
+
+Em desenvolvimento.
