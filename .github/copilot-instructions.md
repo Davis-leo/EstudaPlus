@@ -1,43 +1,48 @@
 # Copilot / AI Agent Instructions — EstudaPlus
+```markdown
+# Copilot / AI Agent Instructions — EstudaPlus (concise)
 
-Purpose: Help AI coding agents become immediately productive in this Django repository.
+Purpose: give AI agents the precise, actionable context required to make safe, correct changes in this repository.
 
-- **Big picture:** This is a minimal Django project (`core`) generated with Django 5.2.1 and configured for a small REST API surface (DRF is installed). The database is SQLite (`db.sqlite3`) at the repo root and the admin site is mounted at `/admin/`.
+- **Big picture / architecture:**
+  - Backend: Django 5.2.1 + Django REST Framework. Frontend is a separate Next.js app (see `EstudaPlus/README.md`).
+  - Apps in this repo: `accounts` (custom `User` model and auth endpoints) and `courses` (courses, modules, lessons, enrollment, reviews).
+  - Routes: `core/urls.py` mounts `api/v1/accounts/` and `api/v1/courses/`.
 
-- **Key files:**
-  - [core/settings.py](core/settings.py) — central config (INSTALLED_APPS includes `rest_framework`; `SECRET_KEY` is currently in-file but `python-decouple` is imported).
-  - [manage.py](manage.py) — canonical entrypoint for running tasks, migrations, and server.
-  - [core/urls.py](core/urls.py) — project URL root (add `include()` here for app routes).
-  - `/db.sqlite3` — local SQLite DB (committed in repo currently).
+- **Critical files & behavior to preserve:**
+  - `core/settings.py`: reads secrets via `python-decouple` (`config('DJANGO_SECRET_KEY')`) and configures MySQL DB using env vars.
+  - `AUTH_USER_MODEL = 'accounts.User'` (do not replace without careful migration strategy).
+  - DRF defaults in `core/settings.py`:
+    - `EXCEPTION_HANDLER` → `core.utils.custom_exception.custom_exception_handler`
+    - `DEFAULT_RENDERER_CLASSES` → `core.utils.renderers.CustomJSONRenderer` (wraps all responses in `{success,data}`)
+    - `DEFAULT_AUTHENTICATION_CLASSES` → JWT (`rest_framework_simplejwt`)
+    - `DEFAULT_PERMISSION_CLASSES` → `IsAuthenticated` (public endpoints use `AllowAny` explicitly)
+  - `core/utils/` contains the project's error-handling and renderer conventions: `custom_exception.py`, `renderers.py`, `exceptions.py`, `formatters.py`.
 
-- **Developer workflows (commands):**
+- **Common developer workflows (exact commands):**
   - Create venv: `python -m venv .venv`
-  - Activate (PowerShell): `.\\.venv\\Scripts\\Activate.ps1` or (cmd): `.venv\\Scripts\\activate`
-  - Install deps: `pip install -r requirements.txt` (if missing) or `pip install django djangorestframework python-decouple`
-  - Apply migrations: `python manage.py migrate`
-  - Run development server: `python manage.py runserver`
+  - Activate (PowerShell): `.\.venv\Scripts\Activate.ps1`
+  - Install deps: `pip install -r requirements.txt`
+  - Required env vars in `.env`: `DJANGO_SECRET_KEY`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`.
+  - Run migrations: `python manage.py migrate`
+  - Run server: `python manage.py runserver`
   - Create superuser: `python manage.py createsuperuser`
   - Run tests: `python manage.py test`
+  - SQL backup: `cursos_backup.sql` exists at repo root — use it to restore course data if needed.
 
-- **Project-specific conventions / patterns:**
-  - Add new Django apps at the repository root and register them in `INSTALLED_APPS` in [core/settings.py](core/settings.py).
-  - Expose app endpoints by `include()`-ing their `urls.py` from [core/urls.py](core/urls.py); e.g. add `path('api/', include('myapp.urls'))`.
-  - `python-decouple` is present in `settings.py` but not yet used for `SECRET_KEY` or environment overrides — prefer a `.env` file for secrets and set `SECRET_KEY`, `DEBUG`, and DB overrides there.
-  - Templates: `TEMPLATES['DIRS']` is empty; put HTML templates under `your_app/templates/`.
-  - Static files served via `STATIC_URL = 'static/'` — collect/static workflow not configured; keep static assets in `static/` within apps for dev.
+- **Project-specific conventions & gotchas:**
+  - `APPEND_SLASH = False` — endpoints are strict about trailing slashes.
+  - Responses are normalized by `CustomJSONRenderer`; return DRF `Response` objects and let the renderer wrap them.
+  - Validation errors should be raised as `core.utils.exceptions.ValidationError(format_serializer_error(serializer.errors))` to match existing clients.
+  - Many course-related flows rely on `Enrollment`, `WatchedLesson` and `Review` checks; see `courses/views.py` for patterns (e.g., `submit_review` and `content` actions).
+  - DB is MySQL by default per `settings.py` and `README.md` — do not assume SQLite unless you intentionally switch configs for local dev.
 
-- **Integration points & external deps:**
-  - Django core (project created with Django 5.2.1). Use the Django management CLI for most tasks.
-  - Django REST Framework (`rest_framework`) is already in `INSTALLED_APPS` — use DRF viewsets/serializers for APIs.
-  - `python-decouple` indicates environment-driven config is intended; add `.env` and avoid committing secrets.
+- **Where to look when changing behavior:**
+  - `core/settings.py` — environment and DRF defaults.
+  - `accounts/views.py` — sign in/up semantics, token creation, password hashing.
+  - `courses/views.py` — read-only viewset, custom actions (`reviews`, `submit_review`, `content`) and lesson-watched endpoints.
+  - `core/utils/` — rendering and exception handling.
 
-- **Conventions that differ from defaults / gotchas:**
-  - `db.sqlite3` is present in repo root; be cautious — tests/dev will reuse this DB unless you configure an alternate DB or ephemeral test DB.
-  - `SECRET_KEY` is hard-coded in `settings.py` currently. Move it to `.env` and load with `config('SECRET_KEY')` to avoid leaking secrets.
-  - `DEBUG = True` — production hardening is not yet configured.
+If you want this trimmed into a one-page checklist (for PR reviewers or junior contributors), I can produce that next. Please tell me which area to shorten or expand.
 
-- **Examples for common edits:**
-  - Register an app: add `'myapp',` to `INSTALLED_APPS` in [core/settings.py](core/settings.py).
-  - Expose app routes: in [core/urls.py](core/urls.py) add `from django.urls import include, path` and `path('api/', include('myapp.urls'))`.
-
-If any of these sections are unclear or you'd like more detail (example `.env`, requirements file, or a short RFC for migrating secrets), tell me which part to expand and I'll iterate.
+```

@@ -1,8 +1,8 @@
-from rest_framework import viewsets, decorators, status
+from rest_framework import viewsets, decorators, status, views
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.request import Request
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, NotFound
 
 from core.utils.exceptions import ValidationError
 from core.utils.formatters import format_serializer_error
@@ -12,6 +12,7 @@ from courses.serializers import CourseSerializer, ModuleSerializer, ReviewSerial
 
 from django.db.models import Avg, Count, Sum
 
+from datetime import datetime
 
 class CourseViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Course.objects.all().order_by('-created_at')
@@ -123,3 +124,49 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
             "progress": progress,
             "modules": modules_data
         })
+    
+    @decorators.action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def certificate(self, request: Request, pk=None):
+        course = self.get_object()
+        user = request.user
+
+        if not Enrollment.objects.filter(user=user, course=course).exists():
+            raise APIException("Você precisa estar matriculado neste curso para obter o certificado.")
+        
+        lessons = Lesson.objects.filter(module__course=course).values_list('id', flat=True)
+        total_lessons = lessons.count()
+        watched_lessons = WatchedLesson.objects.filter(user=user, lesson_id__in=lessons).count()
+
+        if total_lessons == 0 or (watched_lessons / total_lessons) < 1:
+            raise APIException("Você precisa assitir todas as aulas para obter o certificado.")
+        
+        progress = (watched_lessons / total_lessons) * 100 if total_lessons > 0 else 0
+
+        course_data = CourseSerializer(course).data
+        certificate_data = {
+            'issued_at': datetime.now(),
+            'progress': progress
+        }
+
+        return Response({
+            "course": course_data,
+            "certificate": certificate_data
+        })
+
+
+class LessonMarkAsWatchedView(views.APIView):
+    def post(self, request: Request, lesson_id=None):
+        try:
+            lesson = Lesson.objects.get(pk=lesson_id)
+        except Lesson.DoesNotExist:
+            raise NotFound('Aula não encontrada.')
+
+        watched, created = WatchedLesson.objects.get_or_create(
+            user=request.user,
+            lesson=lesson
+        )
+
+        if created:
+            return Response({'detail': 'Aula marcada como assistida.'}, status=status.HTTP_201_CREATED)
+
+        return Response({'detail': 'Aula já estava marcada como assistida.'})
