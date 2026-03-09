@@ -7,12 +7,16 @@ from rest_framework.exceptions import APIException, NotFound
 from core.utils.exceptions import ValidationError
 from core.utils.formatters import format_serializer_error
 from courses.filters import CourseFilter
-from courses.models import Course, Enrollment, Lesson, Module, WatchedLesson
+from courses.models import Course, Enrollment, Lesson, Module, Order, WatchedLesson
 from courses.serializers import CourseSerializer, ModuleSerializer, ReviewSerializer
 
 from django.db.models import Avg, Count, Sum
+from django.conf import settings
 
 from datetime import datetime
+
+import stripe
+
 
 class CourseViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Course.objects.all().order_by('-created_at')
@@ -20,6 +24,57 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     filterset_class = CourseFilter
     ordering_fields = ['price', 'created_at']  # /courses/?order="price"
+
+    def _get_course_and_validate_enrollment(self, request: Request, require_enrollment=True):
+        course = self.get_object()
+        user = request.user
+
+        is_enrolled = Enrollment.objects.filter(
+            user=user,
+            course=course
+        ).exists()
+
+        if require_enrollment and not is_enrolled:
+            raise APIException(
+                "Você precisa estar matriculado neste curso."
+            )
+
+        if not require_enrollment and is_enrolled:
+            raise APIException(
+                "Você já está matriculado neste curso."
+            )
+
+        return course, user
+
+    def _get_watched_progress(self, user, course, with_total_time=False):
+        lessons = Lesson.objects.filter(
+            module__course=course
+        ).values_list('id', flat=True)
+        total_lessons = len(lessons)
+
+        total_time = 0
+        if with_total_time:
+            total_time = lessons.aggregate(
+                total=Sum('time_estimate')
+            )['total'] or 0
+
+        watched_lessons = []
+        total_watched_lessons = 0
+        if user is not None:
+            watched_lessons = WatchedLesson.objects.filter(
+                user=user,
+                lesson_id__in=lessons
+            ).values_list('lesson_id', flat=True)
+            total_watched_lessons = len(watched_lessons)
+
+        return {
+            "lessons": lessons,
+            "total_lessons": total_lessons,
+            "watched_lessons": watched_lessons,
+            "total_watched_lessons": total_watched_lessons,
+            "total_time": total_time,
+            "progress": round((total_watched_lessons / total_lessons) * 100, 2)
+        }
 
     @decorators.action(detail=True, methods=['get'])
     def reviews(self, request: Request, pk=None):
@@ -30,12 +85,7 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
 
     @decorators.action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def submit_review(self, request: Request, pk=None):
-        course = self.get_object()
-        user = request.user
-
-        if not Enrollment.objects.filter(user=user, course=course).exists():
-            raise APIException(
-                "Você precisa estar matriculado neste curso para avaliá-lo.")
+        course, user = self._get_course_and_validate_enrollment(request)
 
         if course.reviews.filter(user=user).exists():
             raise APIException("Você já avaliou este curso.")
@@ -84,74 +134,108 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
     @decorators.action(detail=True, methods=['get'])
     def content(self, request: Request, pk=None):
         course = self.get_object()
+        user = request.user
 
         modules = Module.objects.filter(course=course)
         total_modules = modules.count()
 
-        lessons = Lesson.objects.filter(module__course=course)
-        total_lessons = lessons.count()
-
-        total_time = lessons.aggregate(
-            total=Sum('time_estimate')
-        )['total'] or 0
-
-        watched_lessons_count = 0
-        watched_lessons_set = set()
-
-        if request.user.is_authenticated:
-            watched_lessons = WatchedLesson.objects.filter(
-                user=request.user,
-                lesson__in=lessons
-            ).values_list('lesson_id', flat=True)
-
-            watched_lessons_set = set(watched_lessons)
-            watched_lessons_count = len(watched_lessons_set)
-
-        progress = 0
-        if total_lessons > 0:
-            progress = round((watched_lessons_count / total_lessons) * 100, 2)
+        watched_progress = self._get_watched_progress(
+            user if request.user.is_authenticated else None,
+            course,
+            with_total_time=True
+        )
 
         modules_data = ModuleSerializer(modules, many=True).data
 
         for module in modules_data:
             for lesson in module['lessons']:
-                lesson['is_watched'] = lesson['id'] in watched_lessons_set
+                lesson['is_watched'] = lesson['id'] in watched_progress.get(
+                    'watched_lessons')
 
         return Response({
             "total_modules": total_modules,
-            "total_time": total_time,
-            "total_lessons": total_lessons,
-            "progress": progress,
+            "total_time": watched_progress.get('total_time'),
+            "total_lessons": watched_progress.get('total_lessons'),
+            "progress": watched_progress.get('progress'),
             "modules": modules_data
         })
-    
+
     @decorators.action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def certificate(self, request: Request, pk=None):
-        course = self.get_object()
-        user = request.user
+        course, user = self._get_course_and_validate_enrollment(request)
 
-        if not Enrollment.objects.filter(user=user, course=course).exists():
-            raise APIException("Você precisa estar matriculado neste curso para obter o certificado.")
-        
-        lessons = Lesson.objects.filter(module__course=course).values_list('id', flat=True)
-        total_lessons = lessons.count()
-        watched_lessons = WatchedLesson.objects.filter(user=user, lesson_id__in=lessons).count()
+        watched_progress = self._get_watched_progress(
+            user,
+            course,
+            with_total_time=True
+        )
 
-        if total_lessons == 0 or (watched_lessons / total_lessons) < 1:
-            raise APIException("Você precisa assitir todas as aulas para obter o certificado.")
-        
-        progress = (watched_lessons / total_lessons) * 100 if total_lessons > 0 else 0
+        if watched_progress.get('progress') < 100:
+            raise APIException(
+                "Você precisa assitir todas as aulas para obter o certificado."
+            )
 
         course_data = CourseSerializer(course).data
         certificate_data = {
             'issued_at': datetime.now(),
-            'progress': progress
+            'progress': watched_progress.get('progress')
         }
 
         return Response({
             "course": course_data,
             "certificate": certificate_data
         })
+
+    @decorators.action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def enroll(self, request: Request, pk=None):
+        course, user = self._get_course_and_validate_enrollment(
+            request, require_enrollment=False)
+
+        if Order.objects.filter(user=user, course=course, paid=True).exists():
+            raise APIException(
+                "Você já possui um pedido pago para este curso.")
+
+        user.orders.filter(course=course, paid=False).delete()
+
+        order = Order.objects.create(
+            user=user,
+            course=course,
+        )
+
+        try:
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                mode="payment",
+                line_items=[{
+                    'price_data': {
+                        'currency': 'brl',
+                        'product_data': {
+                            'name': course.title,
+                            'description': course.description,
+                        },
+                        'unit_amount': int(course.price * 100),
+                    },
+                    'quantity': 1
+                }],
+                customer_email=user.email,
+                metadata={
+                    'user_id': user.id,
+                    'course_id': course.id,
+                    'order_id': order.id
+                },
+                success_url=f'{settings.BASE_URL}/api/v1/courses/process_checkout?order_id={order.id}',
+                cancel_url=f'{settings.FRONTEND_BASE_URL}/courses/{course.id}?message=cancel_order',
+            )
+
+            order.external_payment_id = checkout_session.id
+            order.save()
+
+            return Response({'checkout_url': checkout_session.url})
+        except Exception as e:
+            return Response(
+                {'detail': 'Erro ao tentar se inscrever no curso.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class LessonMarkAsWatchedView(views.APIView):
