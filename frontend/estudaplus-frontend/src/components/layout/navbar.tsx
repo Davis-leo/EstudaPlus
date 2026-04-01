@@ -38,7 +38,7 @@ export const Navbar = () => {
             ) : (
               <>
                 <Button variant="ghost" asChild>
-                  <Link href="/auth/sigin">Entrar</Link>
+                  <Link href="/auth/signin">Entrar</Link>
                 </Button>
                 <Button asChild>
                   <Link href="/auth/signup">Cadastrar</Link>
