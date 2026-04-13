@@ -41,3 +41,9 @@ export const enrollInCourse = async (courseId: number) => {
     })
 }
 
+export const markLessonAsWatched = async (lessonId: number) => {
+    return api({
+        endpoint: `/courses/lessons/${lessonId}/watched/`,
+        method: "POST"
+    })
+}
