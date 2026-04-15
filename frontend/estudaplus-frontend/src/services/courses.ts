@@ -47,3 +47,9 @@ export const markLessonAsWatched = async (lessonId: number) => {
         method: "POST"
     })
 }
+
+export const getCourseCertificate = async (courseId: number) => {
+    return api<APIGetCourseCertificateResponse>({
+        endpoint: `/courses/${courseId}/certificate/`
+    })
+}
