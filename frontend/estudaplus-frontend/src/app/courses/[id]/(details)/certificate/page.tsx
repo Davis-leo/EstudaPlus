@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { getCourseCertificate } from "@/services/courses";
 import Link from "next/link";
 
-export default async function ({ params }: { params: { id: string } }) {
+export default async function ({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const certificate = await getCourseCertificate(+id)
 

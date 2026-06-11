@@ -11,7 +11,7 @@ import { ToasterProvider } from "@/components/providers/toaster-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "EduPlatfom - Plataforma de Cursos Online",
+  title: "EstudaPlus - Plataforma de Cursos Online",
   description: "Aprenda com os melhores cursos online. Plataform moderna e intuitiva para seu desenvolvimento profissional."
 }
 

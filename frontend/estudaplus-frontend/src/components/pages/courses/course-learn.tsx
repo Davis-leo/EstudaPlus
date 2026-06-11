@@ -41,6 +41,8 @@ export const CourseLearnPage = ({ course }: Props) => {
     isPending: markLessonAsWatchedIsPending,
   } = useMarkLessonAsWatched();
 
+  const isCourseCompleted = (courseContent?.data?.progress ?? 0) >= 100;
+
   const markLessonAsCompleted = async (notify: boolean = true) => {
     if (!lesson) return;
 
@@ -177,14 +179,25 @@ export const CourseLearnPage = ({ course }: Props) => {
             </Button>
           </Link>
 
-          {lesson && (
-            <Button
-              onClick={() => markLessonAsCompleted()}
-              disabled={lesson.is_watched || markLessonAsWatchedIsPending}
-            >
-              {lesson.is_watched ? "Concluída" : "Marcar como concluída"}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {lesson && (
+              <Button
+                onClick={() => markLessonAsCompleted()}
+                disabled={lesson.is_watched || markLessonAsWatchedIsPending}
+              >
+                {lesson.is_watched ? "Concluída" : "Marcar como concluída"}
+              </Button>
+            )}
+
+            {isCourseCompleted && (
+              <Link href={`/courses/${course.id}/certificate`}>
+                <Button variant="outline" className="gap-2">
+                  <Award className="size-4" />
+                  Ver certificado
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
 
         {lesson && (

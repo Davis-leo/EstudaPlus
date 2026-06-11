@@ -2,7 +2,7 @@ import { CourseLearnPage } from "@/components/pages/courses/course-learn"
 import { getCourse } from "@/services/courses"
 import { redirect } from "next/navigation"
 
-export default async function ({ params }: { params: { id: string } }) {
+export default async function ({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
   const course = await getCourse(+id)
