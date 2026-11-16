@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: estudaplus
+resources:
+- 00-namespace.yaml
+- 01-mysql-secret.yaml
+- 02-mysql-pvc.yaml
+- 03-mysql-deployment.yaml
+- 04-backend-configmap.yaml
+- 05-backend-deployment.yaml
+- 06-frontend-deployment.yaml
+# 07-ingress.yaml descomente se usar ingress
+# - 07-ingress.yaml

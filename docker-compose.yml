@@ -1,0 +1,29 @@
+# Alternativa rápida sem K8s - para testar Docker antes do K8s
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: estudaplus
+      MYSQL_USER: estudaplus
+      MYSQL_PASSWORD: estudaplus123
+    ports: ["3306:3306"]
+    volumes: [mysql-data:/var/lib/mysql]
+  backend:
+    build: ./backend
+    ports: ["8000:8000"]
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: estudaplus
+      DB_USER: estudaplus
+      DB_PASSWORD: estudaplus123
+    depends_on: [mysql]
+  frontend:
+    build: ./frontend/estudaplus-frontend
+    ports: ["3000:3000"]
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    depends_on: [backend]
+volumes:
+  mysql-data:
